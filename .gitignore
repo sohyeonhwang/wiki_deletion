@@ -2,3 +2,5 @@ __pycache__/
 donotuse_code/
 sohwfunctions.py
 *.ipynb
+0_get_deletion_cases_pre2005.ipynb
+0_get_deletion_cases.ipynb
