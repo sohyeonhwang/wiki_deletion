@@ -15,7 +15,7 @@ These scripts should allow you to:
 
 Your directory should be set up like this:
 
-* `./venv`
+* `./venv` (unless you have a `conda` environment)
 * `./repo` (this one)
     * (contains the scripts for collecting and pulling together data)
 * `./deletion_cases`
@@ -24,6 +24,7 @@ Your directory should be set up like this:
 * `./deletion_discussions`
     * `chunk_iii.tsv`
     * nb: this is one of the outputs of `0_get_case_data.py`
+    * TODO - re-format to `pageid.tsv`
 * `./revisions`
     * `{pageid}_revisionhistory.tsv`
     * nb: this is one of the outputs of `1_get_case_data.py`
