@@ -106,6 +106,23 @@ def get_pageid(page_title):
     p, q = retrieve_ids(page_title)
     return p
 
+def title_to_filename(page_title):
+    """
+    Convert a page title to a filename-friendly format.
+    """
+    filename = quote(page_title)
+    filename = filename.replace("/", "_")  # replace slashes to avoid file path issues
+    return filename
+
+def filename_to_title(filename):
+    """
+    Convert a filename back to a page title.
+    """
+    filename = filename[:-5]
+    filename = filename.replace("_", "/")  # replace underscores back to slashes
+    title = unquote(filename)
+    return title
+
 """
 functions that rely on the parse call (or other things requiring it, like revision history)
 """
@@ -114,7 +131,7 @@ def check_redirect(page_title,json_response):
         redirect_map = json_response['parse']['redirects']
         if len(redirect_map) > 0:
             # if there are redirects, we assume the page no longer exists
-            print(f" > {page_title} redirects to {redirect_map[0]['to']}")
+            #print(f" > {page_title} redirects to {redirect_map[0]['to']}")
             return True
         else:
             # no directs, so we assume the page exists
@@ -122,9 +139,10 @@ def check_redirect(page_title,json_response):
     else:
         return "ERROR_NO_PARSE_KEY"
 
-def get_raw_html():
+def get_raw_html(page_title):
     """
     Wrapped for calling the function in wikifunctions.
+    This is a parse call.
     """
     page_title = unquote(page_title)
     markup_string = wf.get_page_raw_content(page_title)
@@ -135,17 +153,18 @@ def get_revisions(page_title):
     Wrapper for calling the function in wikifunctions.
     This return a df with 'ids|comment|timestamp|user|size|sha1' #userid - userid is commented out because it causes problems for me
     It saves the revisions to a file in the ./revisions directory.
+    This is a query call. 
     """
-    page_title = unquote(page_title)
+    page_title = title_to_filename(unquote(page_title))
     revisions_file = Path(f"./revisions/{page_title}_revisions.tsv")
     if revisions_file.exists():
         df = pd.read_csv(revisions_file, sep="\t", header=0)
-        print(f"Revisions for {page_title} already exist in {revisions_file}.")
+        #print(f"Revisions for {page_title} already exist in {revisions_file}.")
     else:
         df = wf.get_all_page_revisions(page_title)
         output = f"./revisions/{page_title}_revisions.tsv"
         df.to_csv(output, sep="\t", index=False)
-        print(f"Revisions for {page_title} saved to {output}.")
+        #print(f"Revisions for {page_title} saved to {output}.")
 
     return df
 
@@ -170,6 +189,7 @@ def get_earliest_revision(page_title, endpoint='en.wikipedia.org/w/api.php', red
     json_response = requests.get(url = query_url, params = query_params).json()
 
     return json_response['query']['pages'][0]['revisions'][0]
+
 
 #TODO 
 def temp(page_title):
