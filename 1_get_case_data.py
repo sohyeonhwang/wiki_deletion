@@ -133,7 +133,7 @@ def main():
         (parent_dir / "deletion_discussions").mkdir(parents=True, exist_ok=True)
 
     # load the deletion_cases
-    dedup_cases = parent_dir / "deletion_cases_sorted_dedup_sample5k.tsv" #"deletion_cases_sorted_dedup.tsv"
+    dedup_cases = parent_dir / "deletion_cases_sorted_dedup.tsv" #"deletion_cases_sorted_dedup.tsv"
     print(f"Loading the deletion cases from file: {dedup_cases}")
 
     df = pd.read_csv(dedup_cases, sep="\t",header=0)
@@ -151,7 +151,7 @@ def main():
 
     input("Start?")
 
-    for i, chunk in enumerate(page_titles_chunked[:550]):  # limit to first 550 chunks for testing
+    for i, chunk in enumerate(page_titles_chunked):  
         # start timer 
         start_time = time.time()
         chunk_outfile = parent_dir / "case_meta_data" / f"chunk_{i+1}.tsv"
@@ -172,9 +172,12 @@ def main():
         elapsed_time = time.time() - start_time
         print(elapsed_time, "seconds to process chunk", i+1)
 
-        # for every 50th chunk, we wait 15 minutes to avoid hitting API limits
-        if (i + 1) % 50 == 0:
-            print(f"Processed {i + 1} chunks. Waiting for 15 minutes to avoid API limits.")
+        if (i + 1) % 100000 == 0:
+            print(f"Processed {i + 1} chunks. Waiting for 3 hours to avoid API limits.")
+            time.sleep(60 * 60 * 3)
+        # for every 50th chunk (5000 pages), we wait 15 minutes to avoid hitting API limits
+        elif (i + 1) % 50 == 0:
+            print(f"\nProcessed {i + 1} chunks. Waiting for 15 minutes to avoid API limits.\n")
             time.sleep(15 * 60)
     
     # open 1_errors.log and count how many lines there are
