@@ -69,16 +69,16 @@ def make_deletion_discussion_dict(page_title):
     if 'error' in json_response.keys():
         #print(f"> {case_title} didn't return a JSON response with the parse key. It probably didn't lead to a page.")
         text = "DISCUSSION_DOES_NOT_EXIST"
-        earliest_revision_date = None
+        #earliest_revision_date = None
     else:
         text = wiki.get_raw_html(case_title)
-        earliest_revision_date = wiki.get_earliest_revision(case_title)['timestamp']
+        #earliest_revision_date = wiki.get_earliest_revision(case_title)['timestamp']
 
     deletion_discussion_dict = {
         'case_title': case_title,
         'url': url,
         'text': text,
-        'e_rev_date': earliest_revision_date
+        #'e_rev_date': earliest_revision_date
     }
     return deletion_discussion_dict
 
