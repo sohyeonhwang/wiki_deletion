@@ -8,6 +8,7 @@ from tqdm import tqdm
 import concurrent.futures
 from urllib.parse import unquote, quote
 import json 
+import traceback
 
 def check_exists_and_title(page_title):
     """
@@ -98,7 +99,7 @@ def filename_to_title(filename):
     title = unquote(filename)
     return title
 
-def process_case(page_title):
+def process_case(page_title,i):
     parent_dir=Path.cwd().parent
     #print(page_title)
     try:
@@ -114,7 +115,8 @@ def process_case(page_title):
         
         return [page_title, page_exists, returned_title, pageid]
     except Exception as e:
-        print(f"Exception for {page_title}: {e}")
+        print(f"In chunk {i}, exception for {page_title}: {e}")
+        traceback.print_exc()
 
         # log the page_title in a file that logs errors
         # afterwards, we will run the script on cases that had errors
@@ -132,8 +134,8 @@ def main():
     if not (parent_dir / "deletion_discussions").exists():
         (parent_dir / "deletion_discussions").mkdir(parents=True, exist_ok=True)
 
-    # load the deletion_cases
-    dedup_cases = parent_dir / "deletion_cases_sorted_dedup.tsv" #"deletion_cases_sorted_dedup.tsv"
+    # load the deletion_cases, which should be: "deletion_cases_sorted_dedup.tsv"
+    dedup_cases = parent_dir / "deletion_cases_sorted_dedup.tsv" 
     print(f"Loading the deletion cases from file: {dedup_cases}")
 
     df = pd.read_csv(dedup_cases, sep="\t",header=0)
@@ -148,36 +150,46 @@ def main():
     page_titles_chunked = wiki.chunk_list(page_titles, chunk_size)
 
     print(f"Processing {len(page_titles_chunked)} chunks of cases, each with up to {chunk_size} cases.")
+    print(f"The last chunk is smaller: {len(page_titles_chunked[-1])}")
 
     input("Start?")
 
-    for i, chunk in enumerate(page_titles_chunked):  
+    for i, chunk in enumerate(page_titles_chunked):
         # start timer 
-        start_time = time.time()
-        chunk_outfile = parent_dir / "case_meta_data" / f"chunk_{i+1}.tsv"
+        chunk_outfile = parent_dir / "case_meta_data" / f"chunk_{i+1:04d}.tsv"
 
-        print(f"Processing chunk {i+1}/{len(page_titles_chunked)} with {len(chunk)} cases.")
+        print(f"Processing chunk {i+1}/{len(page_titles_chunked)} with {len(chunk)} cases, into {chunk_outfile}")
 
-        # use concurrent future to apply process_case to each item in chunk in parallel
-        with concurrent.futures.ProcessPoolExecutor(max_workers=10) as executor:
-            chunk_results = list(tqdm(executor.map(process_case, chunk), total=len(chunk)))
-        
-        meta_data = [r for r in chunk_results if r is not None]
+        # if the chunk_outfile already exists, we skip this chunk
+        if chunk_outfile.exists():
+            print(f"> Chunk {i+1} already processed into {chunk_outfile}, skipping.")
+            continue
+
+        # not doing in parallel, because it is an issue with with the API limits
+        # see documentation on MediaWiki
+        #with concurrent.futures.ProcessPoolExecutor(max_workers=10) as executor:
+        #    chunk_results = list(tqdm(executor.map(process_case, chunk), total=len(chunk)))
+        #meta_data = [r for r in chunk_results if r is not None]
+
+        meta_data = []
+
+        for page_title in tqdm(chunk):
+            result = process_case(page_title,i)
+            if result is not None:
+                meta_data.append(result)
         
         # make into df and export
-        meta_df = pd.DataFrame(meta_data, columns=['case_title_cleaned', 'page_exists', 'returned_title', 'pageid'])
+        # note: page_title == case_title_cleaned
+        meta_df = pd.DataFrame(meta_data, columns=['page_title', 'page_exists', 'returned_title', 'pageid'])
         meta_df.to_csv(chunk_outfile, sep="\t", index=False, header=True)
 
-        # print how long it took to process the chunk
-        elapsed_time = time.time() - start_time
-        print(elapsed_time, "seconds to process chunk", i+1)
-
-        if (i + 1) % 100000 == 0:
-            print(f"Processed {i + 1} chunks. Waiting for 3 hours to avoid API limits.")
+        # for every 1000 chunks (100,000 pages), we wait a while to avoid hitting API litmits.
+        if (i + 1) % 1000 == 0:
+            print(f"Processed {i + 1} chunks of 100 cases each. Waiting for 3 hours to avoid barraging the API.")
             time.sleep(60 * 60 * 3)
         # for every 50th chunk (5000 pages), we wait 15 minutes to avoid hitting API limits
         elif (i + 1) % 50 == 0:
-            print(f"\nProcessed {i + 1} chunks. Waiting for 15 minutes to avoid API limits.\n")
+            print(f"\nProcessed {i + 1} chunks of 100 cases each. Waiting for 15 minutes to avoid barraging the API.\n")
             time.sleep(15 * 60)
     
     # open 1_errors.log and count how many lines there are

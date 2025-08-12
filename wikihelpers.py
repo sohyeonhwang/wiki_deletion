@@ -8,10 +8,16 @@ from copy import deepcopy
 import requests, re
 import wikifunctions as wf
 from pathlib import Path
+import itertools
 
-def chunk_list(lst, n):
-    k, m = divmod(len(lst), n)
-    return [lst[i*k + min(i, m):(i+1)*k + min(i+1, m)] for i in range(n)]
+useragent={'User-Agent': "[[m:Research:Disparities in Online Rule Enforcement]] sohyeon@princeton.edu"}
+
+def chunk_list(iterable, n):
+    """
+    Breaks list down into size n and the final one may be shorter.
+    """
+    chunked = list(itertools.batched(iterable, n))
+    return chunked
 
 def call_query(page_title, endpoint='en.wikipedia.org/w/api.php', redirects=1):
     # Get the response from the API for a query
@@ -26,7 +32,9 @@ def call_query(page_title, endpoint='en.wikipedia.org/w/api.php', redirects=1):
     query_params['ppprop'] ='wikibase_item'
     query_params['format'] = 'json'
 
-    json_response = requests.get(url = query_url, params = query_params).json()
+    response = requests.get(url = query_url, params = query_params, headers = useragent)
+
+    json_response = response.json()
     
     return json_response['query']
 
@@ -42,7 +50,8 @@ def call_parse(page_title, endpoint='en.wikipedia.org/w/api.php', redirects=1):
     query_params['format'] = 'json'
     query_params['formatversion'] = 2
     
-    json_response = requests.get(url = query_url, params = query_params).json()
+    response = requests.get(url = query_url, params = query_params, headers = useragent)
+    json_response = response.json()
     
     return json_response
 
@@ -145,7 +154,7 @@ def get_raw_html(page_title):
     This is a parse call.
     """
     page_title = unquote(page_title)
-    markup_string = wf.get_page_raw_content(page_title)
+    markup_string = wf.get_page_raw_content(page_title,useragent=useragent)
     return markup_string
 
 def get_revisions(page_title):
@@ -161,7 +170,7 @@ def get_revisions(page_title):
         df = pd.read_csv(revisions_file, sep="\t", header=0)
         #print(f"Revisions for {page_title} already exist in {revisions_file}.")
     else:
-        df = wf.get_all_page_revisions(page_title)
+        df = wf.get_all_page_revisions(page_title,useragent=useragent)
         output = f"./revisions/{page_title}_revisions.tsv"
         df.to_csv(output, sep="\t", index=False)
         #print(f"Revisions for {page_title} saved to {output}.")
@@ -186,27 +195,6 @@ def get_earliest_revision(page_title, endpoint='en.wikipedia.org/w/api.php', red
     query_params['redirects'] = redirects
     query_params['formatversion'] = 2
 
-    json_response = requests.get(url = query_url, params = query_params).json()
+    json_response = requests.get(url = query_url, params = query_params, headers = useragent).json()
 
     return json_response['query']['pages'][0]['revisions'][0]
-
-
-#TODO 
-def temp(page_title):
-    revisions_file = Path(f"./revisions/{page_title}_revisions.tsv")
-    if revisions_file.exists():
-        revisions_df = pd.read_csv(revisions_file, sep="\t", header=0)
-    else:
-        # if file does not exist, fetch with wf and save
-        revisions_df = get_revisions(page_title)
-    
-    if revisions_df is None or revisions_df.empty:
-        print(f"No revisions found for {page_title}.")
-        return None, None
-    else:
-        # get the date and revid id of the earliest revision
-        earliest_revision = revisions_df.loc[revisions_df['timestamp'].idxmin()]
-        earliest_revision_date = earliest_revision['timestamp']
-        earliest_revision_id = earliest_revision['revid']
-
-    return earliest_revision_date, earliest_revision_id

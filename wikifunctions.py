@@ -23,7 +23,7 @@ def response_to_revisions(json_response):
     else:
         raise ValueError("There are no revisions in the JSON")
         
-def get_all_page_revisions(page_title, endpoint='en.wikipedia.org/w/api.php', redirects=1):
+def get_all_page_revisions(page_title, endpoint='en.wikipedia.org/w/api.php', redirects=1, useragent='sohyeon@princeton.edu'):
     """Takes Wikipedia page title and returns a DataFrame of revisions
     
     page_title - a string with the title of the page on Wikipedia
@@ -55,7 +55,7 @@ def get_all_page_revisions(page_title, endpoint='en.wikipedia.org/w/api.php', re
     query_params['formatversion'] = 2
     
     # Make the query
-    json_response = requests.get(url = query_url, params = query_params).json()
+    json_response = requests.get(url = query_url, params = query_params, headers=useragent).json()
 
     # Add the temporary list to the parent list
     revision_list += response_to_revisions(json_response)
@@ -282,7 +282,7 @@ def resolve_redirects(page_list,endpoint="en.wikipedia.org/w/api.php"):
             
     return resolved_page_list
 
-def get_page_raw_content(page_title, endpoint='en.wikipedia.org/w/api.php', redirects=1):
+def get_page_raw_content(page_title, endpoint='en.wikipedia.org/w/api.php', redirects=1, useragent='sohyeon@princeton.edu'):
     """Takes a page title and returns the raw HTML.
     
     page_title - a string with the title of the page on Wikipedia
@@ -311,7 +311,7 @@ def get_page_raw_content(page_title, endpoint='en.wikipedia.org/w/api.php', redi
     query_params['format'] = 'json'
     query_params['formatversion'] = 2
     
-    json_response = requests.get(url = query_url, params = query_params).json()
+    json_response = requests.get(url = query_url, params = query_params, headers=useragent).json()
     
     if 'parse' in json_response.keys():
         markup = json_response['parse']['text']
