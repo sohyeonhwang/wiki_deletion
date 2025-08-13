@@ -115,13 +115,13 @@ def process_case(page_title,i):
         
         return [page_title, page_exists, returned_title, pageid]
     except Exception as e:
-        print(f"In chunk {i}, exception for {page_title}: {e}")
+        print(f"In chunk {i+1}, exception for {page_title}: {e}")
         traceback.print_exc()
 
         # log the page_title in a file that logs errors
         # afterwards, we will run the script on cases that had errors
         with open(parent_dir / "case_meta_data" / "1_errors.log", "a") as f:
-            f.write(f"{page_title}\t{e}\n")
+            f.write(f"{i+1}\t{page_title}\t{e}\n")
 
         return None
 
