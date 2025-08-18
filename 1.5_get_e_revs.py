@@ -40,9 +40,14 @@ def main():
 
     for i, chunk in enumerate(page_titles_chunked):
 
-        print(chunk)
+        #print(chunk)
 
         dates = []
+
+        output_path = parent_dir / "case_meta_data" / f"1.5_earliest_revisions_{args.type}_{i+1:04d}.tsv"
+        if output_path.exists():
+            print(f"> Chunk {i+1} already processed into {output_path}, skipping.")
+            continue
 
         for page_title in tqdm(chunk):
 
@@ -63,13 +68,9 @@ def main():
                         
         # dates to dataframe
         df_dates = pd.DataFrame(dates, columns=['page_title', 'earliest_revision_date'])
-        output_path = parent_dir / "case_meta_data" / f"1.5_earliest_revisions_{args.type}_{i+1:04d}.tsv"
+        
         df_dates.to_csv(output_path, sep="\t", index=False)
         print(f"Saved earliest revisions to {output_path}")
-
-        
-        input("Continue?")
-
 
 if __name__ == "__main__":
     args = parser.parse_args()
