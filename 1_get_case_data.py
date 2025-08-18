@@ -185,12 +185,12 @@ def main():
 
         # for every 1000 chunks (100,000 pages), we wait a while to avoid hitting API litmits.
         if (i + 1) % 1000 == 0:
-            print(f"Processed {i + 1} chunks of 100 cases each. Waiting for 3 hours to avoid barraging the API.")
-            time.sleep(60 * 60 * 3)
-        # for every 50th chunk (5000 pages), we wait 15 minutes to avoid hitting API limits
+            print(f"Processed {i + 1} chunks of 100 cases each. Waiting for 1 hour to avoid barraging the API.")
+            time.sleep(60 * 60)
+        # for every 50th chunk (5000 pages), we wait 10 minutes to avoid hitting API limits
         elif (i + 1) % 50 == 0:
-            print(f"\nProcessed {i + 1} chunks of 100 cases each. Waiting for 15 minutes to avoid barraging the API.\n")
-            time.sleep(15 * 60)
+            print(f"\nProcessed {i + 1} chunks of 100 cases each. Waiting for 10 minutes to avoid barraging the API.\n")
+            time.sleep(10 * 60)
     
     # open 1_errors.log and count how many lines there are
     error_log_file = parent_dir / "case_meta_data" / "1_errors.log"
